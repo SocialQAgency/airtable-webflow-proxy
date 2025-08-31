@@ -1,21 +1,40 @@
 // netlify/functions/airtable-proxy.js
 
-export async function handler(event, context) {
-  const params = event.queryStringParameters;
-  const viewName = params.view || "Grid view"; // fallback if nothing passed
+import fetch from "node-fetch";
 
+export async function handler(event, context) {
   try {
-    const response = await fetch(
-      `https://api.airtable.com/v0/app3cnkgCHioDIU3j/All%20Events?view=${encodeURIComponent(viewName)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-        },
-      }
-    );
+    const params = event.queryStringParameters || {};
+
+    // Accept table and view from query params, provide defaults
+    const tableName = params.table || "All Events";
+    const viewName = params.view || "Grid view";
+
+    // Encode names for URL
+    const encodedTable = encodeURIComponent(tableName);
+    const encodedView = encodeURIComponent(viewName);
+
+    // Base ID and API key from environment variables
+    const baseId = process.env.AIRTABLE_BASE_ID;
+    const apiKey = process.env.AIRTABLE_API_KEY;
+
+    if (!baseId || !apiKey) {
+      throw new Error("Airtable Base ID or API Key is missing in environment variables");
+    }
+
+    const url = `https://api.airtable.com/v0/${baseId}/${encodedTable}?view=${encodedView}`;
+    console.log("Fetching Airtable URL:", url);
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`Airtable API error: ${response.status}`);
+      const text = await response.text();
+      throw new Error(`Airtable API error: ${response.status} - ${text}`);
     }
 
     const data = await response.json();
@@ -24,13 +43,17 @@ export async function handler(event, context) {
       statusCode: 200,
       body: JSON.stringify(data),
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": "*", // allow your frontend to access
       },
     };
   } catch (err) {
+    console.error("Error in Airtable Proxy:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
     };
   }
 }
