@@ -1,26 +1,36 @@
 // netlify/functions/airtable-proxy.js
 
 export async function handler(event, context) {
-  // Get the view name passed from Webflow
   const params = event.queryStringParameters;
-  const viewName = params.view || "All Events"; // default if none is sent
+  const viewName = params.view || "Grid view"; // fallback if nothing passed
 
-  const response = await fetch(
-    `https://api.airtable.com/v0/appA1b2C3d4E5/All%20Events?view=${viewName}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
-      },
+  try {
+    const response = await fetch(
+      `https://api.airtable.com/v0/app3cnkgCHioDIU3j/All%20Events?view=${encodeURIComponent(viewName)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Airtable API error: ${response.status}`);
     }
-  );
 
-  const data = await response.json();
+    const data = await response.json();
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(data),
-    headers: {
-      "Access-Control-Allow-Origin": "*", // lets Webflow use it
-    },
-  };
+    return {
+      statusCode: 200,
+      body: JSON.stringify(data),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
+  }
 }
