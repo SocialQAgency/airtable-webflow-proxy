@@ -1,26 +1,33 @@
 // netlify/functions/airtable-proxy.js
-
 export async function handler(event, context) {
   try {
     const params = event.queryStringParameters || {};
 
+    // Required pieces
     const tableName = params.table || "All Events";
-    const viewName = params.view || "All Events";
-
     const encodedTable = encodeURIComponent(tableName);
-    const encodedView = encodeURIComponent(viewName);
 
     const baseId = process.env.AIRTABLE_BASE_ID;
     const apiKey = process.env.AIRTABLE_API_KEY;
 
     if (!baseId || !apiKey) {
-      throw new Error("Airtable Base ID or API Key is missing in environment variables");
+      throw new Error("Airtable Base ID or API Key is missing");
     }
 
-    const url = `https://api.airtable.com/v0/${baseId}/${encodedTable}?view=${encodedView}`;
+    // Start URL
+    let url = `https://api.airtable.com/v0/${baseId}/${encodedTable}`;
+
+    // Build query string using & for every non-empty param (skip "table")
+    let first = true;
+    for (const [key, value] of Object.entries(params)) {
+      if (key === "table" || !value) continue;
+      url += first ? `?${encodeURIComponent(key)}=${encodeURIComponent(value)}` 
+                   : `&${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+      first = false;
+    }
+
     console.log("Fetching Airtable URL:", url);
 
-    // Use the built-in fetch — no import needed
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -53,4 +60,3 @@ export async function handler(event, context) {
     };
   }
 }
-
