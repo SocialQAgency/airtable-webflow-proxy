@@ -6,13 +6,16 @@ export async function handler(event) {
   if (!lat || !lng) {
     return {
       statusCode: 400,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+      },
       body: JSON.stringify({ error: "Missing lat or lng" }),
     };
   }
 
   const GOOGLE_PLACE_API_KEY = process.env.GOOGLE_PLACE_API_KEY;
-
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=100000&type=locality&key=${GOOGLE_PLACE_API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=30000&type=locality&key=${GOOGLE_PLACE_API_KEY}`;
 
   try {
     const response = await fetch(url);
@@ -21,13 +24,18 @@ export async function handler(event) {
     return {
       statusCode: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*", // allow frontend requests
+        "Access-Control-Allow-Origin": "*", // <--- this is required for localhost
+        "Access-Control-Allow-Headers": "*",
       },
       body: JSON.stringify(data),
     };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+      },
       body: JSON.stringify({ error: error.message }),
     };
   }
