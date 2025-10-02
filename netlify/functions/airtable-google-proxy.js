@@ -4,7 +4,7 @@ export async function handler(event, context) {
         const lng = event.queryStringParameters.lng;
 
         // Example: call Google Places API here
-        const response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&key=${process.env.GOOGLE_PLACE_API_KEY}`);
+        const response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&type=locality&key=${process.env.GOOGLE_PLACE_API_KEY}`);
         const data = await response.json();
 
         return {
